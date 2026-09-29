@@ -134,6 +134,9 @@ add_library(imu_proc src/IMU_Processing.cpp)
 add_library(laser_mapping src/LIVMapper.cpp)
 add_library(optimization src/optimization.cpp)
 
+catkin_install_python(PROGRAMS scripts/rectify_mei.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 # Add the main executable
 add_executable(fastlivo_mapping src/main.cpp)
 

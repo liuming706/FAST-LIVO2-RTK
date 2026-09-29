@@ -166,6 +166,7 @@ public:
   int lidar_type, point_filter_num, N_SCANS;
   
   double blind, blind_sqr;
+  double velodyne_time_scale = 0.001; // Point time -> milliseconds; legacy input is microseconds.
   bool feature_enabled, given_offset_time;
   ros::Publisher pub_full, pub_surf, pub_corn;
 

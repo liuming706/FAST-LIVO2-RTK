@@ -1,0 +1,96 @@
+common:
+  img_topic: "/camera_1/image_rect"
+  lid_topic: "/velodyne_points"
+  imu_topic: "/imu/data"
+  img_en: 1
+  lidar_en: 1
+  ros_driver_bug_fix: false
+
+extrin_calib:
+  # p_imu = R_imu_lidar * p_lidar + t_imu_lidar.
+  # Copied from SubT_MRS_Hawkins_Long_Corridor_RC_Extrinsics.yaml: laser_to_imu.
+  extrinsic_T: [0.080000000, 0.029000000, 0.030000000]
+  extrinsic_R: [0.999212900, -0.000519121, 0.004000000,
+                0.000516111, 0.999218492, -0.000939132,
+                -0.004000000, 0.000802565, 0.999993652]
+  # T_camera_lidar = inverse(T_imu_camera) * T_imu_lidar.
+  Rcl: [-0.021080935768, -0.998777564589, 0.021064409003,
+         0.003616277201, -0.020990822052, -0.999771971258,
+         0.998992089595, -0.021006651413, 0.004059996252]
+  Pcl: [0.021313587849, -0.049438882673, -0.099277863514]
+
+time_offset:
+  # Use original sensor header stamps, not the 2026 bag recording timestamps.
+  imu_time_offset: 0.0
+  img_time_offset: 0.0
+  lidar_time_offset: 0.0
+  exposure_time_init: 0.0
+
+preprocess:
+  lidar_type: 2 # Velodyne (VELO16)
+  scan_line: 16
+  velodyne_time_scale: 1000.0 # FLOAT32 time is seconds; internal curvature is ms.
+  feature_extract_enabled: false
+  point_filter_num: 2
+  filter_size_surf: 0.15
+  blind: 0.8
+
+vio:
+  max_iterations: 5
+  outlier_threshold: 1000
+  img_point_cov: 100
+  patch_size: 8
+  patch_pyrimid_level: 3
+  normal_en: true
+  raycast_en: false
+  inverse_composition_en: false
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+
+imu:
+  imu_en: true
+  imu_int_frame: 30
+  acc_cov: 0.05
+  gyr_cov: 0.03
+  gravity_est_en: true
+  ba_bg_est_en: true
+
+lio:
+  max_iterations: 5
+  dept_err: 0.02
+  beam_err: 0.05
+  min_eigen_value: 0.0025
+  voxel_size: 0.5
+  max_layer: 2
+  max_points_num: 50
+  layer_init_num: [5, 5, 5, 5, 5]
+
+local_map:
+  map_sliding_en: true
+  half_map_size: 100
+  sliding_thresh: 8
+
+uav:
+  imu_rate_odom: false
+  gravity_align_en: false
+
+publish:
+  dense_map_en: true
+  pub_effect_point_en: false
+  pub_scan_num: 1
+  blind_rgb_points: 0.0
+
+evo:
+  seq_name: "SubT_MRS_Hawkins_Long_Corridor_RC"
+  pose_output_en: true
+
+pcd_save:
+  pcd_save_en: false
+  colmap_output_en: false
+  filter_size_pcd: 0.15
+  interval: -1
+
+gps:
+  gps_en: false # No GNSS messages in this bag; skip RTK backend.
+  debug_mode: false
+  extrinsic_T: [0.0, 0.0, 0.0]

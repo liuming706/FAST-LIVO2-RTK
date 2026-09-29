@@ -11,6 +11,7 @@ which is included as part of this source code package.
 */
 
 #include "LIVMapper.h"
+#include <filesystem>
 #include <gnss_comm/GnssPVTSolnMsg.h>     
 #include <GeographicLib/LocalCartesian.hpp>
 LIVMapper::LIVMapper(ros::NodeHandle &nh)
@@ -91,6 +92,7 @@ void LIVMapper::readParameters(ros::NodeHandle &nh)
   nh.param<bool>("preprocess/hilti_en", hilti_en, false);
   nh.param<int>("preprocess/lidar_type", p_pre->lidar_type, AVIA);
   nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 6);
+  nh.param<double>("preprocess/velodyne_time_scale", p_pre->velodyne_time_scale, 0.001);
   nh.param<int>("preprocess/point_filter_num", p_pre->point_filter_num, 3);
   nh.param<bool>("preprocess/feature_extract_enabled", p_pre->feature_enabled, false);
 
@@ -171,6 +173,8 @@ void LIVMapper::initializeComponents()
 
 void LIVMapper::initializeFiles() 
 {
+  if (!save_directory.empty())
+    std::filesystem::create_directories(save_directory + "/debug/pcd");
   if (pcd_save_en && colmap_output_en)
   {
       const std::string folderPath = std::string(ROOT_DIR) + "/scripts/colmap_output.sh";
@@ -203,7 +207,10 @@ void LIVMapper::initializeSubscribersAndPublishers(ros::NodeHandle &nh, image_tr
   sub_imu = nh.subscribe(imu_topic, 200000, &LIVMapper::imu_cbk, this);
   sub_img = nh.subscribe(img_topic, 200000, &LIVMapper::img_cbk, this);
   
-  subGPS_pvt = nh.subscribe<gnss_comm::GnssPVTSolnMsg>("/ublox_driver/receiver_pvt", 2000, &LIVMapper::rtk_cbk, this);
+  bool gps_enabled;
+  nh.param<bool>("gps/gps_en", gps_enabled, true);
+  if (gps_enabled)
+    subGPS_pvt = nh.subscribe<gnss_comm::GnssPVTSolnMsg>("/ublox_driver/receiver_pvt", 2000, &LIVMapper::rtk_cbk, this);
   
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odometry/fast_livo2", 10000);
   pub_lidarRGB = nh.advertise<sensor_msgs::PointCloud2>("/synced_cloud", 10000);

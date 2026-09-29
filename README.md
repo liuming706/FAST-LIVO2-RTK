@@ -90,6 +90,57 @@ roslaunch fast_livo HH.launch
 ```bash
 rosbag play HH-LVGO-01.bag
 ```
+### SubT_MRS_Hawkins_Long_Corridor_RC
+
+Build the workspace after adding this configuration (ROS Noetic):
+
+```bash
+cd /home/ubt/workspace/noetic_ws
+source /opt/ros/noetic/setup.bash
+catkin_make -j4
+source devel/setup.bash
+roslaunch fast_livo SubT_MRS_Hawkins_Long_Corridor_RC.launch play_bag:=true
+```
+
+The launch file defaults to
+`/datasets/super_odom/SubT_MRS_Hawkins_Long_Corridor_RC/Long_Corridor_Rosbag/2026-09-28-11-01-46.bag`.
+Use `rviz:=false` for headless execution, `rate:=0.5` for slower playback,
+or `bag:=/path/to/another.bag` to override the bag. To play manually, leave
+`play_bag:=false` (the default), then run in another sourced terminal:
+
+```bash
+rosbag play --clock /datasets/super_odom/SubT_MRS_Hawkins_Long_Corridor_RC/Long_Corridor_Rosbag/2026-09-28-11-01-46.bag --topics /velodyne_points /imu/data /camera_1/image_raw
+```
+
+- Inputs: `/velodyne_points` (16 rings, approximately 10 Hz), `/imu/data`
+  (approximately 200 Hz), and `/camera_1/image_raw` (640 x 480 BGR).
+  Velodyne's FLOAT32 `time` field is in seconds; this configuration uses
+  `preprocess/velodyne_time_scale: 1000.0` to convert it to internal milliseconds.
+  Other configurations keep the existing default of `0.001`.
+- The supplied `*_Intrinsics.yaml` and `*_Extrinsics.yaml` are copied into
+  `config/`. The raw camera is **MEI**, so `rectify_mei.py` applies its mirror,
+  radial and tangential distortion parameters and publishes `/camera_1/image_rect`.
+  The mapper and rectifier share `camera_SubT_MRS_Hawkins_Long_Corridor_RC.yaml`,
+  defining a zero-distortion virtual pinhole camera with focal lengths of 320 px.
+  This crops the field of view to avoid invalid borders. The node uses NumPy,
+  OpenCV and cv_bridge (`python3-numpy`, `python3-opencv`, `ros-noetic-cv-bridge`);
+  OpenCV's optional omnidir module is not required at runtime.
+- Extrinsics use `p_imu = T_imu_lidar * p_lidar` from `laser_to_imu`, and
+  `T_camera_lidar = inverse(T_imu_camera) * T_imu_lidar` from the supplied
+  `rgb_camera_to_imu`. The source calibration values are retained; rectification
+  does not rotate the camera axes.
+- Original sensor header timestamps are preserved. They differ from the 2026
+  bag recording timestamps; no recording-to-sensor time offset is applied.
+  IMU/image/LiDAR offsets default to zero because no temporal calibration was supplied.
+- There is no GNSS in this bag. `gps/gps_en: false` disables the GNSS subscription
+  and offline RTK backend; no Enter-key optimization step is needed. The TUM
+  trajectory is written to `Log/result/SubT_MRS_Hawkins_Long_Corridor_RC.txt`.
+  Debug files use `output/SubT_MRS_Hawkins_Long_Corridor_RC/debug/` by default
+  (override with `outputfilepath:=...`). Replaying overwrites the sequence trajectory.
+
+These are initial mapping/noise settings; the supplied files specify geometric
+calibration, not tuned noise parameters or trajectory accuracy guarantees.
+
 ## 3. Appendix
 **Time Synchronization:**
 

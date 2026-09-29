@@ -1,0 +1,29 @@
+<launch>
+  <arg name="rviz" default="true" />
+  <arg name="play_bag" default="false" />
+  <arg name="bag" default="/datasets/super_odom/SubT_MRS_Hawkins_Long_Corridor_RC/Long_Corridor_Rosbag/2026-09-28-11-01-46.bag" />
+  <arg name="rate" default="1.0" />
+  <arg name="use_sim_time" default="true" />
+  <arg name="outputfilepath" default="$(find fast_livo)/output/SubT_MRS_Hawkins_Long_Corridor_RC" />
+
+  <param name="use_sim_time" value="$(arg use_sim_time)" />
+  <rosparam command="load" file="$(find fast_livo)/config/SubT_MRS_Hawkins_Long_Corridor_RC.yaml" />
+
+  <node pkg="fast_livo" type="rectify_mei.py" name="hawkins_mei_rectifier" output="screen" required="true">
+    <rosparam file="$(find fast_livo)/config/SubT_MRS_Hawkins_Long_Corridor_RC_Intrinsics.yaml" />
+    <rosparam file="$(find fast_livo)/config/camera_SubT_MRS_Hawkins_Long_Corridor_RC.yaml" />
+    <remap from="~input" to="/camera_1/image_raw" />
+    <remap from="~output" to="/camera_1/image_rect" />
+  </node>
+
+  <node pkg="fast_livo" type="fastlivo_mapping" name="laserMapping" output="screen" required="true">
+    <rosparam file="$(find fast_livo)/config/camera_SubT_MRS_Hawkins_Long_Corridor_RC.yaml" />
+    <param name="outputfilepath" value="$(arg outputfilepath)" />
+  </node>
+
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz"
+        launch-prefix="nice" args="-d $(find fast_livo)/rviz_cfg/fast_livo2.rviz" />
+  <!-- Playback clock follows recording time; sensor headers are preserved. -->
+  <node if="$(arg play_bag)" pkg="rosbag" type="play" name="hawkins_bag" output="screen"
+        args="--clock --delay=3 --rate=$(arg rate) &quot;$(arg bag)&quot; --topics /velodyne_points /imu/data /camera_1/image_raw" />
+</launch>
